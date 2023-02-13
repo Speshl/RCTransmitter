@@ -2,7 +2,7 @@
 #include <SPI.h>
 #include "RF24.h"
 
-#define PACKET_SIZE 7
+#define PACKET_SIZE 4
 
 RF24 radio(16, 5);  // using pin 16 for the CE pin, and pin 5 for the CSN pin
 // Let these addresses be used for the pair
@@ -40,26 +40,36 @@ void setup() {
     }
 }
 
+int steerPos = 90;
+bool direction = false;
+
 void loop() {
     uint8_t buffer[PACKET_SIZE];
+
+    /*if(direction){
+        steerPos++;
+    }else{
+        steerPos--;
+    }
+
+    if(steerPos >= 180 || steerPos <= 0){
+        direction = !direction;
+    }
+
+    buffer[0] = steerPos;
+    buffer[1] = 90;
+    buffer[2] = 0;
+    buffer[3] = 0;
+
+    Serial.print("Steer: ");
+    Serial.println(buffer[0]);*/
+
     if(Serial.available() >= PACKET_SIZE){
         Serial.readBytes(buffer, PACKET_SIZE);
-        /*buffer[0] = 127;
-        buffer[1] = 126;
-        buffer[2] = 125;
-        buffer[3] = 124;
-        buffer[4] = 123;
-        buffer[5] = 122;
-        buffer[6] = 121;*/
-
-        //Serial.print("Got Bytes: ");
-        for(int i=0; i<PACKET_SIZE; i++){
-            Serial.print(buffer[i], DEC);
-        }
-        //Serial.println("");
-        bool report = radio.write(buffer, 7);  // transmit & save the report
+        bool report = radio.write(buffer, PACKET_SIZE);  // transmit & save the report
         if(!report){
-            //Serial.println("TX Failed");
+            Serial.println("TX Failed");
         }
     }
+    //delay(500);
 }
