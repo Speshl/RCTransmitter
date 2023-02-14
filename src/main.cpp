@@ -3,6 +3,7 @@
 #include "RF24.h"
 
 #define PACKET_SIZE 4
+#define LED 2
 
 RF24 radio(16, 5);  // using pin 16 for the CE pin, and pin 5 for the CSN pin
 // Let these addresses be used for the pair
@@ -18,6 +19,7 @@ bool radioNumber = 0;  // 0 uses address[0] to transmit, 1 uses address[1] to tr
 bool role = true;  // true = TX role, false = RX role
 
 void setup() {
+    pinMode(LED,OUTPUT);
     Serial.begin(115200);
     //Serial.println("Setting Up...");
     
@@ -25,7 +27,7 @@ void setup() {
         Serial.println(F("radio hardware is not responding!!"));
         while (1) {}  // hold in infinite loop
     }
-    radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default.
+    radio.setPALevel(RF24_PA_MAX);  // RF24_PA_MAX is default.
     radio.setPayloadSize(PACKET_SIZE);
     // set the TX address of the RX node into the TX pipe
     radio.openWritingPipe(address[radioNumber]);  // always uses pipe 0
@@ -64,8 +66,27 @@ void loop() {
     Serial.print("Steer: ");
     Serial.println(buffer[0]);*/
 
-    if(Serial.available() >= PACKET_SIZE){
+    if(Serial.available() >= PACKET_SIZE+2){
+        digitalWrite(LED,HIGH);
+        if(Serial.read() != 255){ //expect first byte of command to be 255
+            return;
+        }
+
+        if(Serial.read() != 127){//expect second byte of command to be 127
+            return;
+        }
         Serial.readBytes(buffer, PACKET_SIZE);
+        bool report = radio.write(buffer, PACKET_SIZE);  // transmit & save the report
+        if(!report){
+            Serial.println("TX Failed");
+        }
+        digitalWrite(LED,LOW);
+    }else{
+        Serial.println("No Serial Available");
+        buffer[0] = 90;
+        buffer[1] = 90;
+        buffer[2] = 0;
+        buffer[3] = 100;
         bool report = radio.write(buffer, PACKET_SIZE);  // transmit & save the report
         if(!report){
             Serial.println("TX Failed");
